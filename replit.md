@@ -1,36 +1,41 @@
-# [Project name]
+# Smart Crop Disease Detection Platform
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+Responsive crop-leaf image uploads, TensorFlow/Keras-ready diagnosis, and persistent SQLite detection history for farmers.
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
+- `pnpm --filter @workspace/crop-disease-platform run dev` — run the React web app
+- `uv run --project . python artifacts/crop-disease-platform/server/app.py` — run the Flask REST API (port 8080 in its managed workflow)
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
-- `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
+- SQLite data is stored in `artifacts/crop-disease-platform/data/detections.sqlite`; uploaded images are stored under `artifacts/crop-disease-platform/uploads/`.
+- Trained weights are optional. See `artifacts/crop-disease-platform/models/README.md`.
 
 ## Stack
 
-- pnpm workspaces, Node.js 24, TypeScript 5.9
-- API: Express 5
-- DB: PostgreSQL + Drizzle ORM
-- Validation: Zod (`zod/v4`), `drizzle-zod`
-- API codegen: Orval (from OpenAPI spec)
-- Build: esbuild (CJS bundle)
+- pnpm workspace; React, Vite, Tailwind CSS, TypeScript
+- Flask REST API; SQLite via Python's standard library
+- OpenAPI contract and generated typed React Query hooks
+- Optional TensorFlow/Keras image inference adapter
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `artifacts/crop-disease-platform/src/` — React pages and application shell
+- `artifacts/crop-disease-platform/server/` — Flask routes and Keras model adapter
+- `artifacts/crop-disease-platform/models/README.md` — model setup and preprocessing contract
+- `lib/api-spec/openapi.yaml` — API source of truth
+- `artifacts/api-server/.replit-artifact/artifact.toml` — managed `/api` service runs the Flask API
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- Follow the requested Flask + SQLite stack while retaining the workspace's shared `/api` service path.
+- Detection records with missing model weights are stored as `model_unavailable`; no diagnosis is fabricated.
+- Image data is stored as files, while SQLite stores image paths and searchable detection metadata.
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+Home, Disease Detection, Results, Dashboard, Detection History, and About pages. Uploads, model readiness, saved results, history search/filter/delete, and activity summaries use the Flask API.
 
 ## User preferences
 
@@ -38,7 +43,8 @@ _Populate as you build — explicit user instructions worth remembering across s
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- A trained `.keras` file and ordered `models/class_names.json` must both exist before inference is enabled.
+- After changing the OpenAPI contract, rerun `pnpm --filter @workspace/api-spec run codegen`.
 
 ## Pointers
 

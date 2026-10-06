@@ -47,3 +47,11 @@ Thumbs.db
 # Replit
 .cache/
 .local/
+
+# Python runtime and local crop-detection data
+.pythonlibs/
+__pycache__/
+*.py[cod]
+artifacts/crop-disease-platform/data/
+artifacts/crop-disease-platform/uploads/
+artifacts/crop-disease-platform/models/*.keras

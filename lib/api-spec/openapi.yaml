@@ -10,6 +10,12 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: detections
+    description: Crop leaf detections and history
+  - name: dashboard
+    description: Detection activity summaries
+  - name: model
+    description: Model readiness
 paths:
   /healthz:
     get:
@@ -24,6 +30,129 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /crop-diseases/model:
+    get:
+      operationId: getModelStatus
+      tags: [model]
+      summary: Get disease model readiness
+      responses:
+        "200":
+          description: Model readiness
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ModelStatus"
+  /detections:
+    get:
+      operationId: listDetections
+      tags: [detections]
+      summary: List saved crop detections
+      parameters:
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: cropType
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+      responses:
+        "200":
+          description: Saved detections
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Detection"
+    post:
+      operationId: createDetection
+      tags: [detections]
+      summary: Upload a leaf image and run model inference
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DetectionInput"
+      responses:
+        "201":
+          description: Detection saved with the model's result or an explicit unavailable status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Detection"
+        "400":
+          description: Invalid upload
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /detections/{id}:
+    get:
+      operationId: getDetection
+      tags: [detections]
+      summary: Get a saved detection
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Detection details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Detection"
+        "404":
+          description: Detection not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    delete:
+      operationId: deleteDetection
+      tags: [detections]
+      summary: Delete a saved detection
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Detection deleted
+        "404":
+          description: Detection not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /dashboard/summary:
+    get:
+      operationId: getDashboardSummary
+      tags: [dashboard]
+      summary: Get detection totals, disease distribution, and weekly activity
+      responses:
+        "200":
+          description: Dashboard summary from saved detections
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
 components:
   schemas:
     HealthStatus:
@@ -33,4 +162,126 @@ components:
           type: string
       required:
         - status
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+      required: [error]
+    ModelStatus:
+      type: object
+      properties:
+        ready:
+          type: boolean
+        engine:
+          type: string
+        message:
+          type: string
+        supportedCrops:
+          type: array
+          items:
+            type: string
+      required: [ready, engine, message, supportedCrops]
+    Detection:
+      type: object
+      properties:
+        id:
+          type: string
+        imageUrl:
+          type: string
+        originalFilename:
+          type: string
+        cropType:
+          type: string
+        farmName:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+        status:
+          type: string
+          enum: [diagnosed, model_unavailable]
+        disease:
+          type: ["string", "null"]
+        confidence:
+          type: ["number", "null"]
+        recommendations:
+          type: array
+          items:
+            type: string
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - imageUrl
+        - originalFilename
+        - cropType
+        - farmName
+        - notes
+        - status
+        - disease
+        - confidence
+        - recommendations
+        - createdAt
+    DetectionInput:
+      type: object
+      properties:
+        imageData:
+          type: string
+          description: Base64-encoded image bytes, without a data URL prefix
+        originalFilename:
+          type: string
+          minLength: 1
+        cropType:
+          type: string
+          minLength: 1
+        farmName:
+          type: string
+        notes:
+          type: string
+      required: [imageData, originalFilename, cropType]
+    DashboardSummary:
+      type: object
+      properties:
+        totalDetections:
+          type: integer
+        diagnosedCount:
+          type: integer
+        modelUnavailableCount:
+          type: integer
+        diseaseDistribution:
+          type: array
+          items:
+            $ref: "#/components/schemas/DiseaseCount"
+        weeklyActivity:
+          type: array
+          items:
+            $ref: "#/components/schemas/ActivityDay"
+        recentDetections:
+          type: array
+          items:
+            $ref: "#/components/schemas/Detection"
+      required:
+        - totalDetections
+        - diagnosedCount
+        - modelUnavailableCount
+        - diseaseDistribution
+        - weeklyActivity
+        - recentDetections
+    DiseaseCount:
+      type: object
+      properties:
+        disease:
+          type: string
+        count:
+          type: integer
+      required: [disease, count]
+    ActivityDay:
+      type: object
+      properties:
+        date:
+          type: string
+        count:
+          type: integer
+      required: [date, count]
 

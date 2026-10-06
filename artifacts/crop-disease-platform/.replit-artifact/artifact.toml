@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Smart Crop Disease Detection Platform"
+description = "A responsive crop-disease detection app for farmers to upload leaf images, review diagnosis guidance, track detection history, and monitor activity."
+version = "1.0.0"
+id = "artifacts/crop-disease-platform"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 24922
+
+[services.development]
+run = "pnpm --filter @workspace/crop-disease-platform run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/crop-disease-platform", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/crop-disease-platform/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "24922"
+BASE_PATH = "/"
