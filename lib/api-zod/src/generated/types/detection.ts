@@ -9,6 +9,17 @@ import type { DetectionStatus } from './detectionStatus';
 
 export interface Detection {
   id: string;
+  image_path: string;
+  crop_name: string;
+  /** @nullable */
+  disease_name: string | null;
+  /** @nullable */
+  severity: string | null;
+  symptoms: string[];
+  treatment: string[];
+  prevention: string[];
+  details_available: boolean;
+  created_at: Date;
   imageUrl: string;
   originalFilename: string;
   cropType: string;

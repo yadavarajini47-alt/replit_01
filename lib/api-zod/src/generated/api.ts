@@ -13,7 +13,8 @@ import * as zod from 'zod';
  * @summary Health check
  */
 export const HealthCheckResponse = zod.object({
-  "status": zod.string()
+  "status": zod.string(),
+  "database": zod.string().optional()
 })
 
 
@@ -44,6 +45,15 @@ export const ListDetectionsQueryParams = zod.object({
 
 export const ListDetectionsResponseItem = zod.object({
   "id": zod.string(),
+  "image_path": zod.string(),
+  "crop_name": zod.string(),
+  "disease_name": zod.string().nullable(),
+  "severity": zod.string().nullable(),
+  "symptoms": zod.array(zod.string()),
+  "treatment": zod.array(zod.string()),
+  "prevention": zod.array(zod.string()),
+  "details_available": zod.boolean(),
+  "created_at": zod.coerce.date(),
   "imageUrl": zod.string(),
   "originalFilename": zod.string(),
   "cropType": zod.string(),
@@ -64,17 +74,24 @@ export const ListDetectionsResponse = zod.array(ListDetectionsResponseItem)
 
 
 
-
 export const CreateDetectionBody = zod.object({
-  "imageData": zod.string().describe('Base64-encoded image bytes, without a data URL prefix'),
-  "originalFilename": zod.string().min(1),
-  "cropType": zod.string().min(1),
-  "farmName": zod.string().optional(),
+  "image": zod.instanceof(Blob).describe('JPG, JPEG, or PNG leaf image, up to 10 MB'),
+  "crop_name": zod.string().min(1),
+  "farm_name": zod.string().optional(),
   "notes": zod.string().optional()
 })
 
 export const CreateDetectionResponse = zod.object({
   "id": zod.string(),
+  "image_path": zod.string(),
+  "crop_name": zod.string(),
+  "disease_name": zod.string().nullable(),
+  "severity": zod.string().nullable(),
+  "symptoms": zod.array(zod.string()),
+  "treatment": zod.array(zod.string()),
+  "prevention": zod.array(zod.string()),
+  "details_available": zod.boolean(),
+  "created_at": zod.coerce.date(),
   "imageUrl": zod.string(),
   "originalFilename": zod.string(),
   "cropType": zod.string(),
@@ -97,6 +114,15 @@ export const GetDetectionParams = zod.object({
 
 export const GetDetectionResponse = zod.object({
   "id": zod.string(),
+  "image_path": zod.string(),
+  "crop_name": zod.string(),
+  "disease_name": zod.string().nullable(),
+  "severity": zod.string().nullable(),
+  "symptoms": zod.array(zod.string()),
+  "treatment": zod.array(zod.string()),
+  "prevention": zod.array(zod.string()),
+  "details_available": zod.boolean(),
+  "created_at": zod.coerce.date(),
   "imageUrl": zod.string(),
   "originalFilename": zod.string(),
   "cropType": zod.string(),
@@ -124,6 +150,9 @@ export const DeleteDetectionResponse = zod.void()
  * @summary Get detection totals, disease distribution, and weekly activity
  */
 export const GetDashboardSummaryResponse = zod.object({
+  "total_detections": zod.number().int().optional(),
+  "diagnosed_count": zod.number().int().optional(),
+  "model_unavailable_count": zod.number().int().optional(),
   "totalDetections": zod.number().int(),
   "diagnosedCount": zod.number().int(),
   "modelUnavailableCount": zod.number().int(),
@@ -137,6 +166,15 @@ export const GetDashboardSummaryResponse = zod.object({
 })),
   "recentDetections": zod.array(zod.object({
   "id": zod.string(),
+  "image_path": zod.string(),
+  "crop_name": zod.string(),
+  "disease_name": zod.string().nullable(),
+  "severity": zod.string().nullable(),
+  "symptoms": zod.array(zod.string()),
+  "treatment": zod.array(zod.string()),
+  "prevention": zod.array(zod.string()),
+  "details_available": zod.boolean(),
+  "created_at": zod.coerce.date(),
   "imageUrl": zod.string(),
   "originalFilename": zod.string(),
   "cropType": zod.string(),

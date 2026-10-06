@@ -10,6 +10,9 @@ import type { Detection } from './detection';
 import type { DiseaseCount } from './diseaseCount';
 
 export interface DashboardSummary {
+  total_detections?: number;
+  diagnosed_count?: number;
+  model_unavailable_count?: number;
   totalDetections: number;
   diagnosedCount: number;
   modelUnavailableCount: number;

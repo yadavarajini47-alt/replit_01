@@ -26,6 +26,12 @@ MODEL_CLASSES_PATH = Path(
         Path(__file__).resolve().parents[1] / "models" / "class_names.json",
     )
 )
+DISEASE_CATALOG_PATH = Path(
+    os.environ.get(
+        "DISEASE_CATALOG_PATH",
+        Path(__file__).resolve().parents[1] / "models" / "disease_catalog.json",
+    )
+)
 
 _model: Any = None
 _load_error: str | None = None
@@ -129,6 +135,41 @@ def predict(image_path: Path) -> tuple[str, float]:
     if index >= len(classes):
         raise RuntimeError("Model output count does not match the class label list.")
     return classes[index], float(probabilities[index])
+
+
+def disease_details_for(label: str) -> dict[str, Any] | None:
+    """Read curator-provided disease details for a model class; never guess advice."""
+    if not DISEASE_CATALOG_PATH.is_file():
+        return None
+    try:
+        catalog = json.loads(DISEASE_CATALOG_PATH.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    if not isinstance(catalog, dict):
+        return None
+    entry = catalog.get(label)
+    if not isinstance(entry, dict):
+        return None
+    severity = entry.get("severity")
+    disease_name = entry.get("disease_name")
+    if not isinstance(severity, str) or not severity.strip():
+        return None
+    if not isinstance(disease_name, str) or not disease_name.strip():
+        return None
+    details: dict[str, Any] = {
+        "disease_name": disease_name.strip()[:120],
+        "severity": severity.strip()[:40],
+    }
+    for field in ("symptoms", "treatment", "prevention"):
+        values = entry.get(field)
+        if (
+            not isinstance(values, list)
+            or not values
+            or any(not isinstance(value, str) or not value.strip() for value in values)
+        ):
+            return None
+        details[field] = [value.strip()[:500] for value in values[:20]]
+    return details
 
 
 def recommendations_for(label: str) -> list[str]:

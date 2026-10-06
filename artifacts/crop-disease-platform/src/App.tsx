@@ -87,6 +87,17 @@ function StatusBadge({ detection }: { detection: Detection }) {
     : <span className="result-badge unavailable"><FlaskConical size={13}/> No model result</span>;
 }
 
+function apiErrorMessage(error: unknown) {
+  if (error && typeof error === 'object' && 'data' in error) {
+    const data = (error as { data?: unknown }).data;
+    if (data && typeof data === 'object' && 'error' in data) {
+      const message = (data as { error?: unknown }).error;
+      if (typeof message === 'string') return message;
+    }
+  }
+  return 'The image could not be analyzed. Please check it and try again.';
+}
+
 function DetectionRow({ item, onDelete }: { item: Detection; onDelete?: (item: Detection) => void }) {
   return <div className="detection-row" data-testid={`row-detection-${item.id}`}>
     <Link href={`/results/${item.id}`} className="row-image-link">
@@ -222,24 +233,17 @@ function DetectionPage() {
     setFile(next);
     setPreview(URL.createObjectURL(next));
   }
-  async function submit(event: FormEvent<HTMLFormElement>) {
+  function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!file || !cropType) { setFormError(!file ? 'Add a leaf photo to continue.' : 'Select a crop type to continue.'); return; }
     setFormError('');
-    const imageData = await new Promise<string>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onerror = () => reject(new Error('The image could not be read. Choose another photo and try again.'));
-      reader.onload = () => resolve(String(reader.result).split(',')[1] ?? '');
-      reader.readAsDataURL(file);
-    }).catch(error => { setFormError(error instanceof Error ? error.message : 'The image could not be read.'); return ''; });
-    if (!imageData) return;
-    create.mutate({ data: { imageData, originalFilename: file.name, cropType, ...(farmName.trim() ? { farmName: farmName.trim() } : {}), ...(notes.trim() ? { notes: notes.trim() } : {}) } }, {
+    create.mutate({ data: { image: file, crop_name: cropType, ...(farmName.trim() ? { farm_name: farmName.trim() } : {}), ...(notes.trim() ? { notes: notes.trim() } : {}) } }, {
       onSuccess: detection => {
         void queryClient.invalidateQueries({ queryKey: getListDetectionsQueryKey() });
         void queryClient.invalidateQueries({ queryKey: getGetDashboardSummaryQueryKey() });
         setLocation(`/results/${detection.id}`);
       },
-      onError: () => setFormError('We couldn’t save this detection. Please try again.'),
+      onError: error => setFormError(apiErrorMessage(error)),
     });
   }
   return <div className="page-wrap narrow-page">
@@ -315,9 +319,17 @@ function ResultsPage() {
       <div className="result-detail">
         {item.status === 'diagnosed' ? <div className="diagnosis-card"><div className="diagnosis-top"><div className="diagnosis-check"><BadgeCheck size={20}/></div><div><span className="eyebrow">MODEL ASSESSMENT</span><h2>{item.disease || 'Assessment recorded'}</h2></div></div>
             {item.confidence !== null && item.confidence !== undefined && <div className="confidence-block"><div className="confidence-label"><span>Model confidence</span><b>{Math.round(item.confidence * 100)}%</b></div><div className="confidence-track"><span style={{ width: `${Math.max(0, Math.min(item.confidence * 100, 100))}%` }}/></div><small>Confidence is not certainty. Results depend on image quality and supported crop varieties.</small></div>}
+            {item.severity && <div className={`severity-indicator severity-${item.severity.toLowerCase()}`}><span>Severity</span><b>{item.severity}</b></div>}
             <div className="model-caveat"><ShieldCheck size={16}/><span>This is an automated assessment, not a confirmed diagnosis. Seek local expert advice before treatment.</span></div>
           </div> : <div className="unavailable-card"><div className="unavailable-symbol"><FlaskConical size={21}/></div><div><div className="eyebrow">NO MODEL ASSESSMENT</div><h2>Diagnosis unavailable</h2><p>The disease model was unavailable when this image was submitted. We’ve saved your observation, but no diagnosis was generated.</p></div><Link href="/detection" className="button button-soft">Try another image <ArrowRight size={15}/></Link></div>}
-        {item.status === 'diagnosed' && item.recommendations?.length > 0 && <div className="recommendation-card"><div className="card-title-row"><div><div className="eyebrow">NEXT STEPS</div><h3>Recommendations</h3></div><span className="recommendation-mark"><Leaf size={17}/></span></div><ul>{item.recommendations.map((tip, index) => <li key={`${index}-${tip}`}><span className="rec-number">{String(index + 1).padStart(2, '0')}</span><span>{tip}</span></li>)}</ul></div>}
+        {item.status === 'diagnosed' && item.details_available ? <div className="disease-guidance-card">
+          <div className="card-title-row"><div><div className="eyebrow">DISEASE INFORMATION</div><h3>What to look for and do</h3></div><span className="recommendation-mark"><Leaf size={17}/></span></div>
+          {[
+            { title: 'Symptoms', values: item.symptoms },
+            { title: 'Treatment', values: item.treatment },
+            { title: 'Prevention', values: item.prevention },
+          ].map(section => <section className="guidance-section" key={section.title}><h4>{section.title}</h4><ul>{section.values.map((value, index) => <li key={`${section.title}-${index}`}>{value}</li>)}</ul></section>)}
+        </div> : item.status === 'diagnosed' && item.recommendations?.length > 0 ? <div className="recommendation-card"><div className="card-title-row"><div><div className="eyebrow">SAVED NOTES</div><h3>Recommendations</h3></div><span className="recommendation-mark"><Leaf size={17}/></span></div><ul>{item.recommendations.map((tip, index) => <li key={`${index}-${tip}`}><span className="rec-number">{String(index + 1).padStart(2, '0')}</span><span>{tip}</span></li>)}</ul></div> : item.status === 'diagnosed' && <div className="guidance-unavailable"><ShieldCheck size={16}/><span>Disease-specific symptoms, treatment, and prevention guidance is not configured for this model class. Ask a local agricultural expert before taking action.</span></div>}
         <div className="detail-card"><div className="eyebrow">OBSERVATION DETAILS</div><div className="detail-grid"><div><span>Crop</span><b>{item.cropType}</b></div><div><span>Farm / field</span><b>{item.farmName || 'Not specified'}</b></div><div><span>Saved on</span><b><DateText date={item.createdAt}/></b></div><div><span>File name</span><b className="detail-filename">{item.originalFilename}</b></div></div>{item.notes && <div className="notes-block"><span>Field notes</span><p>{item.notes}</p></div>}</div>
       </div>
     </div>

@@ -7,6 +7,7 @@
  */
 export interface HealthStatus {
   status: string;
+  database?: string;
 }
 
 export interface Error {
@@ -30,6 +31,17 @@ export const DetectionStatus = {
 
 export interface Detection {
   id: string;
+  image_path: string;
+  crop_name: string;
+  /** @nullable */
+  disease_name: string | null;
+  /** @nullable */
+  severity: string | null;
+  symptoms: string[];
+  treatment: string[];
+  prevention: string[];
+  details_available: boolean;
+  created_at: string;
   imageUrl: string;
   originalFilename: string;
   cropType: string;
@@ -46,14 +58,12 @@ export interface Detection {
   createdAt: string;
 }
 
-export interface DetectionInput {
-  /** Base64-encoded image bytes, without a data URL prefix */
-  imageData: string;
+export interface DetectionUploadInput {
+  /** JPG, JPEG, or PNG leaf image, up to 10 MB */
+  image: Blob;
   /** @minLength 1 */
-  originalFilename: string;
-  /** @minLength 1 */
-  cropType: string;
-  farmName?: string;
+  crop_name: string;
+  farm_name?: string;
   notes?: string;
 }
 
@@ -68,6 +78,9 @@ export interface ActivityDay {
 }
 
 export interface DashboardSummary {
+  total_detections?: number;
+  diagnosed_count?: number;
+  model_unavailable_count?: number;
   totalDetections: number;
   diagnosedCount: number;
   modelUnavailableCount: number;

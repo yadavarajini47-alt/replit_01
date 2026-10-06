@@ -17,7 +17,7 @@ tags:
   - name: model
     description: Model readiness
 paths:
-  /healthz:
+  /health:
     get:
       operationId: healthCheck
       tags: [health]
@@ -42,7 +42,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ModelStatus"
-  /detections:
+  /history:
     get:
       operationId: listDetections
       tags: [detections]
@@ -75,6 +75,7 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/Detection"
+  /predict:
     post:
       operationId: createDetection
       tags: [detections]
@@ -82,18 +83,30 @@ paths:
       requestBody:
         required: true
         content:
-          application/json:
+          multipart/form-data:
             schema:
-              $ref: "#/components/schemas/DetectionInput"
+              $ref: "#/components/schemas/DetectionUploadInput"
       responses:
         "201":
-          description: Detection saved with the model's result or an explicit unavailable status
+          description: Prediction and saved detection details
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/Detection"
         "400":
-          description: Invalid upload
+          description: Missing or invalid upload fields
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "413":
+          description: Image exceeds the upload limit
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "415":
+          description: Unsupported or invalid image type
           content:
             application/json:
               schema:
@@ -141,7 +154,7 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
-  /dashboard/summary:
+  /statistics:
     get:
       operationId: getDashboardSummary
       tags: [dashboard]
@@ -159,6 +172,8 @@ components:
       type: object
       properties:
         status:
+          type: string
+        database:
           type: string
       required:
         - status
@@ -187,6 +202,31 @@ components:
       properties:
         id:
           type: string
+        image_path:
+          type: string
+        crop_name:
+          type: string
+        disease_name:
+          type: ["string", "null"]
+        severity:
+          type: ["string", "null"]
+        symptoms:
+          type: array
+          items:
+            type: string
+        treatment:
+          type: array
+          items:
+            type: string
+        prevention:
+          type: array
+          items:
+            type: string
+        details_available:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
         imageUrl:
           type: string
         originalFilename:
@@ -213,6 +253,15 @@ components:
           format: date-time
       required:
         - id
+        - image_path
+        - crop_name
+        - disease_name
+        - severity
+        - symptoms
+        - treatment
+        - prevention
+        - details_available
+        - created_at
         - imageUrl
         - originalFilename
         - cropType
@@ -223,26 +272,30 @@ components:
         - confidence
         - recommendations
         - createdAt
-    DetectionInput:
+    DetectionUploadInput:
       type: object
       properties:
-        imageData:
+        image:
           type: string
-          description: Base64-encoded image bytes, without a data URL prefix
-        originalFilename:
-          type: string
-          minLength: 1
-        cropType:
+          format: binary
+          description: JPG, JPEG, or PNG leaf image, up to 10 MB
+        crop_name:
           type: string
           minLength: 1
-        farmName:
+        farm_name:
           type: string
         notes:
           type: string
-      required: [imageData, originalFilename, cropType]
+      required: [image, crop_name]
     DashboardSummary:
       type: object
       properties:
+        total_detections:
+          type: integer
+        diagnosed_count:
+          type: integer
+        model_unavailable_count:
+          type: integer
         totalDetections:
           type: integer
         diagnosedCount:

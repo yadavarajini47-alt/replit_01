@@ -678,6 +678,15 @@ button { color: inherit; }
 .unavailable-card p { font-size: 10px; color: #877c66; line-height: 1.6; margin: 7px 0 0; }
 .unavailable-card .button { grid-column: 2; justify-self: start; margin-top: 4px; }
 .recommendation-card, .detail-card { padding: 16px 17px; }
+.disease-guidance-card { padding: 16px 17px; background: #fff; border: 1px solid #e6ece6; border-radius: 9px; }
+.guidance-section { border-top: 1px solid #eff2ee; margin-top: 12px; padding-top: 11px; }
+.guidance-section h4 { margin: 0 0 7px; color: #465d49; font-size: 10px; }
+.guidance-section ul { list-style: disc; margin: 0; padding-left: 17px; color: #68776d; font-size: 10px; line-height: 1.65; }
+.guidance-section li + li { margin-top: 4px; }
+.guidance-unavailable { display: flex; gap: 9px; align-items: start; padding: 13px 15px; border: 1px solid #e6ebdf; border-radius: 9px; background: #f4f7f0; color: #708065; font-size: 10px; line-height: 1.6; }
+.guidance-unavailable svg { flex: 0 0 auto; color: #72915d; }
+.severity-indicator { display: flex; align-items: center; justify-content: space-between; margin-top: 13px; padding: 9px 11px; border-radius: 7px; background: #fff; color: #788578; font-size: 10px; }
+.severity-indicator b { color: #486a43; font-size: 11px; text-transform: capitalize; }
 .card-title-row { display: flex; justify-content: space-between; align-items: center; }
 .card-title-row h3 { margin: 4px 0 0; font-size: 16px; color: #33473a; }
 .recommendation-mark { width: 30px; height: 30px; display: grid; place-items: center; color: #658954; background: #eff5eb; border-radius: 8px; }

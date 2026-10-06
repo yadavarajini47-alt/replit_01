@@ -22,7 +22,7 @@ import type {
 import type {
   DashboardSummary,
   Detection,
-  DetectionInput,
+  DetectionUploadInput,
   Error,
   HealthStatus,
   ListDetectionsParams,
@@ -61,7 +61,7 @@ export const getHealthCheckUrl = () => {
 
 
 
-  return `/api/healthz`
+  return `/api/health`
 }
 
 /**
@@ -85,7 +85,7 @@ export const healthCheck = async ( options?: Parameters<typeof customFetch>[1]):
 
 export const getHealthCheckQueryKey = () => {
     return [
-    `/api/healthz`
+    `/api/health`
     ] as const;
     }
 
@@ -223,7 +223,7 @@ export const getListDetectionsUrl = (params?: ListDetectionsParams,) => {
 
   const stringifiedParams = normalizedParams.toString();
 
-  return stringifiedParams.length > 0 ? `/api/detections?${stringifiedParams}` : `/api/detections`
+  return stringifiedParams.length > 0 ? `/api/history?${stringifiedParams}` : `/api/history`
 }
 
 /**
@@ -246,7 +246,7 @@ export const listDetections = async (params?: ListDetectionsParams, options?: Pa
 
 export const getListDetectionsQueryKey = (params?: ListDetectionsParams,) => {
     return [
-    `/api/detections`, ...(params ? [params] : [])
+    `/api/history`, ...(params ? [params] : [])
     ] as const;
     }
 
@@ -300,34 +300,29 @@ export const getCreateDetectionUrl = () => {
 
 
 
-  return `/api/detections`
+  return `/api/predict`
 }
 
 /**
  * @summary Upload a leaf image and run model inference
  */
-export const createDetection = async (detectionInput: DetectionInput, options?: Parameters<typeof customFetch>[1]): Promise<Detection> => {
+export const createDetection = async (detectionUploadInput: DetectionUploadInput, options?: Parameters<typeof customFetch>[1]): Promise<Detection> => {
+    const formData = new FormData();
+formData.append(`image`, detectionUploadInput.image);
+formData.append(`crop_name`, detectionUploadInput.crop_name);
+if(detectionUploadInput.farm_name !== undefined) {
+ formData.append(`farm_name`, detectionUploadInput.farm_name);
+ }
+if(detectionUploadInput.notes !== undefined) {
+ formData.append(`notes`, detectionUploadInput.notes);
+ }
 
-    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
-    if (!h) return {};
-    if (h instanceof Headers) return Object.fromEntries(h.entries());
-    if (Symbol.iterator in h) {
-      return Object.fromEntries(
-        Array.from(h as Iterable<Iterable<string>>, (entry) => Array.from(entry) as [string, string]),
-      );
-    }
-    const headers: Record<string, string | readonly string[]> = {};
-    for (const [name, value] of Object.entries<string | readonly string[] | undefined>(h)) {
-      if (value !== undefined) headers[name] = value;
-    }
-    return headers;
-  };
-return customFetch<Detection>(getCreateDetectionUrl(),
+  return customFetch<Detection>(getCreateDetectionUrl(),
   {
     ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
-    body: JSON.stringify(detectionInput)
+    method: 'POST'
+    ,
+    body: formData
   }
 );}
 
@@ -365,9 +360,9 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type CreateDetectionMutationResult = NonNullable<Awaited<ReturnType<typeof createDetection>>>
-    export type CreateDetectionMutationBody = BodyType<DetectionInput>
+    export type CreateDetectionMutationBody = BodyType<DetectionUploadInput>
     export type CreateDetectionMutationError = ErrorType<Error>
-    export type CreateDetectionMutationVariables = {data: BodyType<DetectionInput>}
+    export type CreateDetectionMutationVariables = {data: BodyType<DetectionUploadInput>}
 
     /**
  * @summary Upload a leaf image and run model inference
@@ -539,7 +534,7 @@ export const getGetDashboardSummaryUrl = () => {
 
 
 
-  return `/api/dashboard/summary`
+  return `/api/statistics`
 }
 
 /**
@@ -562,7 +557,7 @@ export const getDashboardSummary = async ( options?: Parameters<typeof customFet
 
 export const getGetDashboardSummaryQueryKey = () => {
     return [
-    `/api/dashboard/summary`
+    `/api/statistics`
     ] as const;
     }
 
